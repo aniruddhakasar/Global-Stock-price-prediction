@@ -1,8 +1,6 @@
 import pandas as pd
 import streamlit as st
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.preprocessing import MinMaxScaler
 
 from sklearn.model_selection import train_test_split
 import yfinance as yf
