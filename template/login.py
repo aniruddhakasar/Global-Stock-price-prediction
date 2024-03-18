@@ -188,17 +188,15 @@ elif choice == "Login":
     username = st.text_input("Username")
     password = st.text_input("Password", type="password")
 
-    if st.checkbox("Remember me"):
-        st.write("Remember me is checked.")
-
     if st.button("Log In"):
         if is_admin(username, password):
             st.success("Logged in as admin.")
             try:
-                result = subprocess.run(["streamlit", "run", "global.py"], capture_output=True, text=True, check=True)
-                st.code(result.stdout, language="python")
-            except subprocess.CalledProcessError as e:
-                st.error(f"Error running the script: {e}")
+                df = pd.read_csv(CSV_FILE)
+            except FileNotFoundError:
+                st.error(f"Error: CSV file '{CSV_FILE}' not found.")
+                st.stop()  # Stop execution if the file is not found
+
             # Replace with your logic for running 'global.py' if needed.
         elif user_exists(username, password):
             st.success(f"Logged in as:{username}")

@@ -1,67 +1,38 @@
-# Import necessary libraries
-import dash
-from dash import dcc, html
-from dash.dependencies import Input, Output
-import yfinance as yf
-import pandas as pd
-import plotly.express as px
+import streamlit as st
+import requests
+from bs4 import BeautifulSoup
+import plotly.graph_objects as go
 
-# Initialize Dash app
-app = dash.Dash(__name__)
+# Define the NSE website URL and headers
+url = "https://www.nseindia.com/live_market/dynaContent/live_watch/get_quote/GetQuote.jsp?symbol=NIFTY+50"
+headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36 Edge/16.16299"
+}
 
-# Layout of the dashboard
-app.layout = html.Div([
-    html.H1("Stock Analysis Dashboard"),
+# Scrape the stock data from the NSE website
+response = requests.get(url, headers=headers)
+soup = BeautifulSoup(response.text, "html.parser")
+price_data = soup.find("span", {"id": "last_price"}).text
+previous_close = soup.find("td", {"data-head": "Previous Close"}).find_next("td").text
 
-    # Input for stock symbol
-    dcc.Input(id='stock-input', type='text', value='AAPL', placeholder='Enter stock symbol'),
+# Create the data for the graph
+date_labels = list(range(1, 61))
+data = [
+    go.Scatter(
+        x=date_labels,
+        y=[previous_close] + [int(price_data)] + [int(price_data)] * (59),
+        mode="lines+markers",
+        name="NIFTY 50"
+    )
+]
 
-    # Dropdown for selecting time period
-    dcc.Dropdown(
-        id='time-period',
-        options=[
-            {'label': '1y', 'value': '1y'},
-            {'label': '2y', 'value': '2y'},
-            {'label': '5y', 'value': '5y'}
-        ],
-        value='1y',
-        style={'width': '50%'}
-    ),
-
-    # Candlestick chart for stock prices
-    dcc.Graph(id='candlestick-chart'),
-
-    # Line chart for moving average
-    dcc.Graph(id='moving-average-chart')
-])
-
-# Callback to update charts based on user input
-@app.callback(
-    [Output('candlestick-chart', 'figure'),
-     Output('moving-average-chart', 'figure')],
-    [Input('stock-input', 'value'),
-     Input('time-period', 'value')]
-)
-def update_charts(stock_symbol, time_period):
-    # Fetch stock data using yfinance
-    stock_data = yf.download(stock_symbol, period=time_period)
-
-    # Candlestick chart
-    candlestick_chart = px.candlestick(stock_data, x=stock_data.index,
-                                        open='Open', high='High',
-                                        low='Low', close='Close',
-                                        title=f'{stock_symbol} Stock Prices')
-
-    # Calculate moving average
-    stock_data['MA50'] = stock_data['Close'].rolling(window=50).mean()
-
-    # Line chart for moving average
-    moving_average_chart = px.line(stock_data, x=stock_data.index,
-                                   y=['Close', 'MA50'],
-                                   title=f'{stock_symbol} Stock Prices with 50-day Moving Average')
-
-    return candlestick_chart, moving_average_chart
-
-# Run the app
-if __name__ == '__main__':
-    app.run_server(debug=True)
+# Display the scraped data and the graph
+st.write(f"NIFTY 50 (^NSEI)")
+st.write(f"NSE - NSE Real Time Price. Currency in INR")
+st.write(f"{price_data} +{previous_close - int(price_data)} ({previous_close - int(price_data)}%) As of now. Market open .")
+st.write("Summary Chart Previous Close Open Volume ✩ Follow Conversations Historical Data")
+st.write(f"Previous Close: {previous_close}")
+st.write(f"Day's Range: {min(int(price_data), previous_close)} - {max(int(price_data), previous_close)}")
+st.write(f"52 Week Range: 16,828.35-{max(int(price_data), previous_close)}")
+st.write(f"Avg. Volume: 317,815")
+st.plotly_chart(go.Figure(data=data), use_container_width=True)

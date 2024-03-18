@@ -1,1 +1,4 @@
-Username,Password
+Username,Password,IsAdmin
+Aniruddhakasar,avk,False
+Aniket,Aniket,False
+Aniruddhak,Aniruddhak,False
